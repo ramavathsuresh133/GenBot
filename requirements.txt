@@ -1,0 +1,30 @@
+# Core ML
+transformers>=4.36.0
+torch>=2.0.0
+sentence-transformers>=2.3.0
+datasets>=2.14.0
+
+# NLP preprocessing
+spacy>=3.7.0
+nltk>=3.8.0
+
+# PDF extraction
+PyMuPDF>=1.23.0
+pytesseract>=0.3.10
+
+# Web scraping
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+
+# Backend
+fastapi>=0.104.0
+uvicorn>=0.24.0
+streamlit>=1.28.0
+
+# Utils
+pandas>=2.1.0
+numpy>=1.24.0
+python-multipart>=0.0.6
+
+# Optional: GPU acceleration (uncomment if using NVIDIA GPU)
+# accelerate>=0.24.0
