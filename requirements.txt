@@ -26,5 +26,10 @@ pandas>=2.1.0
 numpy>=1.24.0
 python-multipart>=0.0.6
 
+# Multilingual translation
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+deep-translator>=1.11.4
+
 # Optional: GPU acceleration (uncomment if using NVIDIA GPU)
 # accelerate>=0.24.0

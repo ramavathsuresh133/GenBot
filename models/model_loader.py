@@ -1,5 +1,6 @@
 """
 model_loader.py - Singleton model loader for GENBOT
+Supports: summarization, bias analysis, and translation models.
 """
 
 from transformers import BartForConditionalGeneration, BartTokenizer
@@ -47,3 +48,5 @@ class ModelLoader:
 
 # Global instance
 model_loader = ModelLoader()
+
+

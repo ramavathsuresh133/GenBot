@@ -21,3 +21,12 @@ def extract_text(file):
     except Exception as e:
         logger.error(f"PDF extraction failed: {e}")
         raise RuntimeError(f"Failed to extract text from PDF: {e}")
+
+def get_base64_image(image_path):
+    """Convert a local image to a base64 string for embedding in CSS/HTML."""
+    import base64
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except Exception as e:
+        return ""

@@ -1,10 +1,13 @@
 """
-controller.py — Fixed Central Controller
-Orchestrates all three LLMs with proper preprocessing to prevent errors.
+controller.py — Central Controller with Multilingual Support
+Orchestrates all three LLMs with proper preprocessing.
+Integrates translation: input→English→process→translate output back.
 """
 
 from core.logger import get_logger
 from services.preprocessing import preprocess, get_stats
+from services.language_service import language_service
+from services.history_service import history_service
 from modules.summarization import summarize
 from modules.comparison import compare
 from modules.analysis import analyze
@@ -23,14 +26,15 @@ _TASK_MAP = {
 _controller = None
 
 
-def route_task(task_label: str, text, **kwargs) -> dict:
+def route_task(task_label: str, text, language: str = "English", **kwargs) -> dict:
     """
     Convenience wrapper used by the Streamlit frontend.
 
     Args:
         task_label: UI label e.g. "Summarize Document"
-        text:       str for summarize/analyze
-                    list[str] for compare (2 or 3 documents)
+        text:       str for summarize/analyze (already translated to English)
+                    list[str] for compare (already translated to English)
+        language:   User's selected language for output translation.
         kwargs:     doc_labels (list[str]) — optional labels for compare docs
     """
     global _controller
@@ -66,12 +70,48 @@ def route_task(task_label: str, text, **kwargs) -> dict:
         if "error" in result:
             return {"status": "error", "message": result["error"]}
 
+        # ── Translate output if non-English ───────────────────────────────────
+        if language_service.is_translation_needed(language):
+            result = _translate_output(task_key, result, language)
+
         # Pick model name based on task
         model_names = {
-            "summarize": "facebook/bart-large-cnn",
+            "summarize": "sshleifer/distilbart-cnn-12-6",
             "compare":   "all-MiniLM-L6-v2",
-            "analyze":   "facebook/bart-large-mnli",
+            "analyze":   "cross-encoder/nli-MiniLM2-L6-H768",
         }
+
+        # ── Persistent Logging ───────────────────────────────────────────────
+        try:
+            log_source = "Documents" if task_key == "compare" else "Document"
+            if "doc_labels" in kwargs:
+                log_source = " | ".join(kwargs["doc_labels"])
+            elif isinstance(text, str):
+                log_source = text[:30].replace("\n", " ") + "..."
+
+            log_metric = f"{elapsed}s"
+            log_result = ""
+
+            if task_key == "summarize":
+                log_metric = f"{elapsed}s"
+                log_result = result.get("summary", "")[:300]
+            elif task_key == "compare":
+                log_metric = f"{result.get('similarity_score', 'N/A')}% Match"
+                log_result = result.get("interpretation", "")[:300]
+            elif task_key == "analyze":
+                log_metric = f"{result.get('confidence', 0):.1%} Conf."
+                log_result = f"Focus: {result.get('predicted_category', 'Unknown')}"
+
+            history_service.log_task(
+                task=task_label,
+                source=log_source,
+                language=language,
+                tokens=total_tokens,
+                metrix=log_metric,
+                result=log_result
+            )
+        except Exception as log_err:
+            logger.error(f"Post-task logging failed: {log_err}")
 
         return {
             "status": "success",
@@ -81,12 +121,75 @@ def route_task(task_label: str, text, **kwargs) -> dict:
                 "model_name": model_names.get(task_key, "unknown"),
                 "execution_time": elapsed,
                 "input_token_length": total_tokens,
+                "language": language,
             },
         }
 
     except Exception as e:
         logger.error(f"route_task error: {e}")
         return {"status": "error", "message": str(e)}
+
+
+# ── Output Translation ───────────────────────────────────────────────────────
+
+def _translate_output(task_key: str, result: dict, language: str) -> dict:
+    """
+    Translate LLM output fields from English to the user's language.
+    Only translates human-readable text, not scores or labels.
+    """
+    try:
+        if task_key == "summarize":
+            # Translate bullet points
+            if "bullets" in result:
+                result["bullets"] = language_service.translate_list(
+                    result["bullets"], language
+                )
+            # Translate table data
+            if "table_data" in result:
+                for row in result["table_data"]:
+                    if "Key Point" in row:
+                        row["Key Point"] = language_service.translate_from_english(
+                            row["Key Point"], language
+                        )
+            # Translate summary text
+            if "summary" in result:
+                result["summary"] = language_service.translate_from_english(
+                    result["summary"], language
+                )
+
+        elif task_key == "compare":
+            # Translate interpretation
+            if "interpretation" in result:
+                result["interpretation"] = language_service.translate_from_english(
+                    result["interpretation"], language
+                )
+            # Translate unique points for each document
+            for key in list(result.keys()):
+                if key.startswith("unique_to_"):
+                    if isinstance(result[key], list):
+                        result[key] = language_service.translate_list(
+                            result[key], language
+                        )
+            # Translate pairwise interpretations
+            if "pairwise" in result:
+                for row in result["pairwise"]:
+                    if "Interpretation" in row:
+                        row["Interpretation"] = language_service.translate_from_english(
+                            row["Interpretation"], language
+                        )
+
+        elif task_key == "analyze":
+            # Translate summary insight
+            if "summary_insight" in result:
+                result["summary_insight"] = language_service.translate_from_english(
+                    result["summary_insight"], language
+                )
+
+    except Exception as e:
+        logger.error(f"Output translation error: {e}")
+        # Return untranslated result on failure — graceful fallback
+
+    return result
 
 
 # ── Controller Class ──────────────────────────────────────────────────────────

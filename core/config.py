@@ -1,5 +1,6 @@
 """
 config.py - Centralized configuration for GENBOT
+Includes multilingual support settings.
 """
 
 import torch
@@ -34,6 +35,16 @@ SUMM_MAX_LENGTH = 130
 SUMM_MIN_LENGTH = 30
 MAX_SUMMARY_CHUNKS = 3
 
-# ── UI Config ────────────────────────────────────────────────────────────────
-THEME_GRADIENT = "linear-gradient(135deg, #0f0c29, #302b63, #24243e)"
-ACCENT_COLOR = "#a78bfa"
+# ── UI Config (Strategic Portal Styling) ──────────────────────────────────────
+# Official Government Navy Blue and Professional Accents
+PRIMARY_COLOR = "#1E3A8A"
+SECONDARY_COLOR = "#FFFFFF"
+ACCENT_COLOR = "#FF9933"  # Saffron
+SUCCESS_COLOR = "#138808" # Green
+TEXT_COLOR = "#1F2937"    # Dark Grey
+BACKGROUND_COLOR = "#F3F4F6" # Light Grey
+
+# ── Language Config ──────────────────────────────────────────────────────────
+SUPPORTED_LANGUAGES = ["English", "Hindi", "Telugu", "Tamil", "Kannada", "Malayalam"]
+DEFAULT_LANGUAGE = "English"
+NLLB_MODEL_NAME = "facebook/nllb-200-distilled-600M"

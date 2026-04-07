@@ -19,8 +19,9 @@ def clean_text(text: str) -> str:
     """Remove noise from extracted PDF/URL text."""
     # Normalize unicode (handles special chars from PDFs)
     text = unicodedata.normalize("NFKD", text)
-    # Remove non-printable characters
-    text = re.sub(r'[^\x20-\x7E\n]', ' ', text)
+    # Remove non-printable/control characters but PRESERVE Unicode scripts
+    # (Devanagari, Telugu, Tamil, Kannada, Malayalam, etc.)
+    text = re.sub(r'[^\w\s.,;:!?\'\"()\-–—/\n]', ' ', text, flags=re.UNICODE)
     # Remove excessive whitespace
     text = re.sub(r'[ \t]+', ' ', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
