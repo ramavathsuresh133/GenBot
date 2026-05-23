@@ -6,6 +6,12 @@ Official, Multi-Page Bureau de Intelligence for Policy and Document Analysis.
 import streamlit as st
 import pandas as pd
 import os
+import sys
+from pathlib import Path
+
+# Add project root to sys.path so absolute imports (core, services) work on Streamlit Cloud
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from core.config import (
     APP_NAME, VERSION, PRIMARY_COLOR, SECONDARY_COLOR, ACCENT_COLOR, 
     SUCCESS_COLOR, TEXT_COLOR, BACKGROUND_COLOR, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE
