@@ -14,14 +14,14 @@ import torch
 MODEL_NAME        = "sshleifer/distilbart-cnn-12-6"  # 3x faster than bart-large-cnn
 MAX_INPUT_TOKENS  = 1024
 MAX_CHUNK_CHARS   = 4000   # larger chunks = fewer chunks = faster
-MAX_OUTPUT_TOKENS = 200
-MAX_CHUNKS        = 15     # cap total chunks — beyond this, smart sampling kicks in
+MAX_OUTPUT_TOKENS = 250
+MAX_CHUNKS        = 20     # cap total chunks — beyond this, smart sampling kicks in
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ── Load once at module level ─────────────────────────────────────────────────
 print(f"[Summarization] Loading {MODEL_NAME} on {DEVICE}...")
 _tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-_model     = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME).to(DEVICE)
+_model     = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, low_cpu_mem_usage=False).to(DEVICE)
 _model.eval()
 print("[Summarization] Model ready.")
 
@@ -126,20 +126,24 @@ def summarize(text: str, bullet_points: bool = True) -> dict:
 
     if not chunk_summaries:
         final_summary = "Summary unavailable."
-    elif len(chunk_summaries) > 1:
-        combined = " ".join(chunk_summaries)
-        try:
-            final_summary = _summarize_chunk(combined)
-        except Exception:
-            final_summary = " ".join(chunk_summaries)
+        bullets = []
     else:
-        final_summary = chunk_summaries[0]
+        # Each chunk summary becomes its own bullet — no re-collapsing
+        raw_bullets = []
+        for s in chunk_summaries:
+            # Split on ". " in case a chunk summary has multiple sentences
+            parts = [p.strip() for p in s.split(". ") if len(p.strip()) > 10]
+            raw_bullets.extend(parts)
 
-    # Split into sentences for bullet points
-    sentences = [s.strip() for s in final_summary.split(". ") if len(s.strip()) > 10]
+        # Deduplicate near-identical bullets
+        seen, bullets = set(), []
+        for b in raw_bullets:
+            key = b[:60].lower()
+            if key not in seen:
+                seen.add(key)
+                bullets.append(b if b.endswith(".") else b + ".")
 
-    # Format bullets
-    bullets = [s if s.endswith(".") else s + "." for s in sentences]
+        final_summary = "\n".join(f"• {b}" for b in bullets)
 
     # Table data for the structured tab in UI
     table_data = [{"#": i+1, "Key Point": b} for i, b in enumerate(bullets)]

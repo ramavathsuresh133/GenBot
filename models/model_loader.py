@@ -28,7 +28,7 @@ class ModelLoader:
         if self._summ_model is None:
             logger.info(f"Loading summarization model: {SUMM_MODEL_NAME} on {DEVICE}...")
             self._summ_tokenizer = BartTokenizer.from_pretrained(SUMM_MODEL_NAME)
-            self._summ_model = BartForConditionalGeneration.from_pretrained(SUMM_MODEL_NAME).to(DEVICE)
+            self._summ_model = BartForConditionalGeneration.from_pretrained(SUMM_MODEL_NAME, low_cpu_mem_usage=False).to(DEVICE)
             logger.info("Summarization model loaded successfully.")
         return self._summ_model, self._summ_tokenizer
 

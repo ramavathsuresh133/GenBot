@@ -14,6 +14,7 @@ from services import pdf_service, url_service, preprocessing
 from services.language_service import language_service
 from services.ui_labels import get_label
 from services.history_service import history_service
+from services.pdf_export_service import pdf_export_service
 from core.controller import route_task
 from app.ui_styles import get_govt_css
 
@@ -251,6 +252,37 @@ def execute_task(task_label, payload, language, source_labels):
                 with st.expander(L("tab_table")):
                     st.dataframe(pd.DataFrame(data["table_data"]), use_container_width=True)
 
+                # ── PDF Download ──────────────────────────────────────────────
+                import base64 as _b64
+                from datetime import datetime as _dt
+                _ts = _dt.now().strftime("%Y%m%d_%H%M%S")
+                _src = source_labels[0] if source_labels else "document"
+                try:
+                    pdf_bytes = pdf_export_service.build(
+                        bullets=data["bullets"],
+                        table_data=data.get("table_data", []),
+                        source_name=_src,
+                        language=language,
+                    )
+                    _b64_pdf = _b64.b64encode(pdf_bytes).decode()
+                    _fname   = f"genbot_summary_{_ts}.pdf"
+                    _label   = L("btn_download_summary_pdf")
+                    st.markdown(f"""
+                        <a href="data:application/pdf;base64,{_b64_pdf}"
+                           download="{_fname}"
+                           style="display:block; width:100%; text-align:center;
+                                  background:linear-gradient(135deg,#FF6B00,#e65c00);
+                                  color:white !important; font-weight:700;
+                                  font-size:0.95rem; padding:0.7rem 2rem;
+                                  border-radius:10px; text-decoration:none;
+                                  box-shadow:0 4px 14px rgba(255,107,0,0.45);
+                                  margin-top:0.5rem; letter-spacing:0.3px;">
+                            {_label}
+                        </a>
+                    """, unsafe_allow_html=True)
+                except Exception as _pdf_err:
+                    st.warning(f"PDF generation failed: {_pdf_err}")
+
             elif res["task"] == "compare":
                 st.subheader(f"{L('similarity_score_label')}: {data.get('similarity_score')}%")
                 st.info(data.get("interpretation"))
@@ -260,6 +292,37 @@ def execute_task(task_label, payload, language, source_labels):
                         with st.expander(f"{L('unique_points_in', label=label)}"):
                             for p in data[key]:
                                 st.markdown(f'<div class="result-item result-item-alt">• {p}</div>', unsafe_allow_html=True)
+
+                # ── PDF Download ──────────────────────────────────────────────
+                import base64 as _b64
+                from datetime import datetime as _dt
+                _ts = _dt.now().strftime("%Y%m%d_%H%M%S")
+                try:
+                    pdf_bytes = pdf_export_service.build_compare_pdf(
+                        similarity_score=data.get("similarity_score", 0),
+                        interpretation=data.get("interpretation", ""),
+                        unique_points=data,
+                        source_labels=source_labels,
+                        language=language,
+                    )
+                    _b64_pdf = _b64.b64encode(pdf_bytes).decode()
+                    _fname   = f"genbot_comparison_{_ts}.pdf"
+                    _label   = L("btn_download_compare_pdf")
+                    st.markdown(f"""
+                        <a href="data:application/pdf;base64,{_b64_pdf}"
+                           download="{_fname}"
+                           style="display:block; width:100%; text-align:center;
+                                  background:linear-gradient(135deg,#FF6B00,#e65c00);
+                                  color:white !important; font-weight:700;
+                                  font-size:0.95rem; padding:0.7rem 2rem;
+                                  border-radius:10px; text-decoration:none;
+                                  box-shadow:0 4px 14px rgba(255,107,0,0.45);
+                                  margin-top:0.5rem; letter-spacing:0.3px;">
+                            {_label}
+                        </a>
+                    """, unsafe_allow_html=True)
+                except Exception as _pdf_err:
+                    st.warning(f"PDF generation failed: {_pdf_err}")
 
             elif res["task"] == "analyze":
                 scores_dict = data.get("all_scores", {})
@@ -284,6 +347,38 @@ def execute_task(task_label, payload, language, source_labels):
                     st.dataframe(df_scores, use_container_width=True)
                 else:
                     st.info("No detailed scores available.")
+
+                # ── PDF Download ──────────────────────────────────────────────
+                import base64 as _b64
+                from datetime import datetime as _dt
+                _ts = _dt.now().strftime("%Y%m%d_%H%M%S")
+                _src = source_labels[0] if source_labels else "document"
+                try:
+                    pdf_bytes = pdf_export_service.build_analyze_pdf(
+                        pred_cat=pred_cat,
+                        pred_score=pred_score,
+                        scores_dict=scores_dict,
+                        source_name=_src,
+                        language=language,
+                    )
+                    _b64_pdf = _b64.b64encode(pdf_bytes).decode()
+                    _fname   = f"genbot_bias_analysis_{_ts}.pdf"
+                    _label   = L("btn_download_bias_pdf")
+                    st.markdown(f"""
+                        <a href="data:application/pdf;base64,{_b64_pdf}"
+                           download="{_fname}"
+                           style="display:block; width:100%; text-align:center;
+                                  background:linear-gradient(135deg,#FF6B00,#e65c00);
+                                  color:white !important; font-weight:700;
+                                  font-size:0.95rem; padding:0.7rem 2rem;
+                                  border-radius:10px; text-decoration:none;
+                                  box-shadow:0 4px 14px rgba(255,107,0,0.45);
+                                  margin-top:0.5rem; letter-spacing:0.3px;">
+                            {_label}
+                        </a>
+                    """, unsafe_allow_html=True)
+                except Exception as _pdf_err:
+                    st.warning(f"PDF generation failed: {_pdf_err}")
         else:
             st.error(f"❌ Bureau Error: {res['message']}")
 

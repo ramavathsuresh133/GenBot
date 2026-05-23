@@ -115,7 +115,7 @@ class LanguageService:
         src_code = LANGUAGE_MAP[source_language]
 
         logger.info(f"Translating input from {source_language} to English...")
-        print(f"[Translation] Translating from {source_language} → English...")
+        print(f"[Translation] Translating from {source_language} -> English...")
 
         chunks = self._chunk_for_translation(text)
         translated_chunks = []
@@ -150,7 +150,7 @@ class LanguageService:
 
         tgt_code = LANGUAGE_MAP[target_language]
 
-        logger.info(f"Translating output English → {target_language}...")
+        logger.info(f"Translating output English -> {target_language}...")
 
         chunks = self._chunk_for_translation(text)
         translated_chunks = []
