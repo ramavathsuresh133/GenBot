@@ -214,8 +214,8 @@ def get_govt_css(primary=INDIA_NAVY, secondary=INDIA_CARD_BG,
                  accent=INDIA_SAFFRON, success=INDIA_GREEN,
                  text=INDIA_TEXT, bg=INDIA_LIGHT_BG):
     return f"""
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     /* ── Global ─────────────────────────────────────────────────────────── */
     .stApp {{
